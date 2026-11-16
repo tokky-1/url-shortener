@@ -1,5 +1,8 @@
 # URL Shortener
 
+[![CI](https://github.com/tokky-1/url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/tokky-1/url-shortener/actions/workflows/ci.yml)
+
+
 `POST /urls` stores a long URL and gives back a short code. `GET /{code}` sends
 the visitor to the long URL and counts the click.
 
@@ -28,6 +31,22 @@ uv run alembic upgrade head
 uv run uvicorn main:app --reload
 uv run pytest                  # tests use real Postgres and real Redis
 ```
+## CI
+
+GitHub Actions runs on every pull request and on every push to `main`
+(`.github/workflows/ci.yml`):
+
+1. **test:** starts Postgres 15 and Redis 7 as service containers, runs
+   `alembic upgrade head`, then `pytest`. The tests hit real services, the same
+   as locally.
+2. **build:** builds the Docker image. It only runs if `test` passed.
+
+CI installs dependencies from `uv.lock` with `--locked`, so a stale lockfile
+fails the build. The Python version in CI has to match the Dockerfile's base
+image, so CI tests the same interpreter the image ships. The first CI run failed
+because my laptop and CI used different Python versions.
+
+CI does not deploy anything yet. The ECS deploy below was done by hand.
 
 ## How it works
 
@@ -149,4 +168,3 @@ With the service running, `/health` returned `ok` and `/ready` returned `"databa
 - **The Redis safety check is per worker.** Each worker keeps its own check,
   so with several workers the very first failure still hits every in-flight
   request once.
-- **The 24 hour cache time is a guess.** Revisit it with real hit rates.
