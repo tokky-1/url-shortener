@@ -33,3 +33,27 @@ variable "url_route" {
   type        = string
   default     = "url-route-table"
 }
+
+variable "url_eip" {
+  description = "elastic ip address "
+  type        = string
+  default     = "url-elastic-ip"
+}
+
+variable "url_route_pri" {
+  description = "elastic ip address "
+  type        = string
+  default     = "url-private-route"
+}
+
+variable "url_subnet_pri" {
+  description = "private subnet "
+  type        = string
+  default     = "url-shortener-pri-subnet"
+}
+
+variable "url_nat_gateway" {
+  description = "nat gateway "
+  type        = string
+  default     = "url-nat-gate"
+}

@@ -12,14 +12,14 @@ resource "aws_vpc" "vpc_name" {
 }
 
 resource "aws_subnet" "url_pub_subnet" {
-  vpc_id     = aws_vpc.vpc_name.id
-  count      = 2
-  cidr_block = cidrsubnet(aws_vpc.vpc_name.cidr_block, 8, count.index)
+  vpc_id                  = aws_vpc.vpc_name.id
+  count                   = 2
+  cidr_block              = cidrsubnet(aws_vpc.vpc_name.cidr_block, 8, count.index)
   map_public_ip_on_launch = false
   tags = {
     Name = "${var.url_subnet}-${count.index}"
   }
-   availability_zone = data.aws_availability_zones.available.names[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 
 }
 
@@ -38,12 +38,59 @@ resource "aws_route_table" "url_route_tb" {
     gateway_id = aws_internet_gateway.url_gate.id
   }
 
-   tags = {
+  tags = {
     Name = var.url_route
   }
 }
 resource "aws_route_table_association" "url_route_tb_public" {
-  count = 2
+  count          = 2
   subnet_id      = aws_subnet.url_pub_subnet[count.index].id
   route_table_id = aws_route_table.url_route_tb.id
+}
+
+
+resource "aws_eip" "url_shortener_eip" {
+  domain = "vpc"
+
+  tags = {
+    Name = var.url_eip
+  }
+}
+
+resource "aws_subnet" "url_pri_subnet" {
+  vpc_id                  = aws_vpc.vpc_name.id
+  count                   = 2
+  cidr_block              = cidrsubnet(aws_vpc.vpc_name.cidr_block, 8, count.index + 10)
+  map_public_ip_on_launch = false
+  tags = {
+    Name = "${var.url_subnet_pri}-${count.index}"
+  }
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+
+}
+resource "aws_route_table" "url_route_tb_pri" {
+  vpc_id = aws_vpc.vpc_name.id
+  tags = {
+    Name = var.url_route_pri
+  }
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.url_nat.id
+  }
+}
+
+resource "aws_nat_gateway" "url_nat" {
+  allocation_id = aws_eip.url_shortener_eip.allocation_id
+  subnet_id     = aws_subnet.url_pub_subnet[0].id
+
+  tags = {
+    Name = var.url_nat_gateway
+  }
+  depends_on = [aws_internet_gateway.url_gate]
+}
+
+resource "aws_route_table_association" "url_route_tb_private" {
+  count          = 2
+  subnet_id      = aws_subnet.url_pri_subnet[count.index].id
+  route_table_id = aws_route_table.url_route_tb_pri.id
 }
